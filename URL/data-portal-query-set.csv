@@ -1,0 +1,9 @@
+title,query,flag,time,folder_path
+hello,"with media as(
+select v.media_id as id from media.media_meta_data_view m inner join media.media_variant v on cast(m.id as varchar)=cast(v.meta_data_id as varchar) where system_generated = 'Y' and m.id is not null
+),
+xid as (
+select name, projectunitid, primarysaletype, brochure_mappingid as mappingid from projectdb.projectunit_rootdata
+where entitytype='PROJECT' and brochure_mappingid is not null
+)
+select replace(replace(replace(x.projectunitid, '{""$numberLong"":', ''),'""',''),'}','') as projectId, x.primarysaletype as rescom, m.id from xid x left join media m on cast(m.id as varchar)=x.mappingid where m.id is not null",false,2025-02-11 12:25:24,C:\Users\urvashi.aggarwal/Downloads\hello.csv
