@@ -1,29 +1,17 @@
 import glob
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
-#from selenium.webdriver.chrome.service import Service
-
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-import re, os, time, datetime, shutil, json
-from selenium.webdriver.support.select import Select
-import pandas as pd
+import re, os, time, json
 from selenium.webdriver.support.ui import WebDriverWait 
 from selenium.webdriver.support import expected_conditions as EC
-import openpyxl
-from openpyxl.workbook import Workbook
 from selenium.common.exceptions import NoSuchElementException
 import csv,os,requests
-import pdb
-from io import BytesIO
-from datetime import date
-from bs4 import BeautifulSoup
-
 from pathlib import Path
-from selenium.webdriver.chrome.options import Options
-#chrome_options = webdriver.ChromeOptions() 
+
 
 HTML_PAGE_make_dir = os.path.expanduser("~/Downloads")
 chrome_options = webdriver.ChromeOptions() 
@@ -37,18 +25,16 @@ chrome_options.add_argument('--kiosk-printing')
  
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
 
-default_download_dir = str(Path.home() / "Downloads")  # Default downloads folder
+default_download_dir = str(Path.home() / "Downloads")  
 destination_dir = "downloaded_pdfs"
 if not os.path.exists(destination_dir):
     os.makedirs(destination_dir)
-#driver.get("https://rera.karnataka.gov.in/projectViewDetails")
 driver.get("https://rera.karnataka.gov.in/home?language=en")
 time.sleep(1)
 driver.maximize_window()
 driver.find_element(By.XPATH, '//*[@id="main_nav"]/ul[2]/li[5]/a').click()
 time.sleep(1)
 driver.find_element(By.XPATH, '//*[@id="main_nav"]/ul[2]/li[5]/ul/li[1]/a').click()
-#driver.maximize_window()
 ids_group = []
 cnt = 0
 cc="NO"
@@ -63,15 +49,14 @@ target_texts= [
                 ]
  
 def clean_filename(filename):
-    return re.sub(r'[\/:*?"<>|]', '_', filename)  # Replace invalid characters with '_'
+    return re.sub(r'[\/:*?"<>|]', '_', filename)  
  
 
 def download_FP_with_ctrl_s(url, textName, reg_no):
-    # Define the base directory for storing PDFs
+
     target_folder = os.path.abspath("downloaded_pdfs")
     target_file = f"{clean_filename(textName)} {clean_filename(reg_no)}.pdf"
-   
-    # Ensure the target folder exists
+
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
    
@@ -79,8 +64,7 @@ def download_FP_with_ctrl_s(url, textName, reg_no):
     download_folder = os.path.abspath("temp_downloads")
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
-   
-    # Set up Chrome options
+
     chrome_options = webdriver.ChromeOptions()
     prefs = {
         "download.default_directory": download_folder,
@@ -89,19 +73,15 @@ def download_FP_with_ctrl_s(url, textName, reg_no):
         "plugins.always_open_pdf_externally": True
     }
     chrome_options.add_experimental_option("prefs", prefs)
-   
-    # Set up the Chrome driver
+
     driver = webdriver.Chrome(options=chrome_options)
-   
-    # Open the URL
     driver.get(url)
-    time.sleep(3)  # Wait for the page to load
+    time.sleep(3)  
    
     # Simulate Ctrl + S
     ActionChains(driver).key_down(Keys.CONTROL).send_keys('s').key_up(Keys.CONTROL).perform()
-    time.sleep(10)  # Wait for the download to complete
+    time.sleep(10)  
    
-    # Close the browser
     driver.quit()
    
     # Find the most recently downloaded file
@@ -115,8 +95,7 @@ def download_FP_with_ctrl_s(url, textName, reg_no):
         print(f"PDF downloaded and saved as {new_path}")
     else:
         print("No files were downloaded.")
-   
-    # Clean up the temporary download folder
+
     if os.path.exists(download_folder):
         os.rmdir(download_folder)
 
@@ -133,7 +112,6 @@ def download_image(url, file_path):
 with open("k-total-units (1).csv","r") as csvfile:
     records  = csv.reader(csvfile,delimiter=",")
     next(records)
-    #pdb.set_trace()
     for row in records:
         if len(row) == 0:
             continue
@@ -145,7 +123,6 @@ with open("k-total-units (1).csv","r") as csvfile:
         driver.find_element(By.ID, 'regNo2').send_keys(xid)
         driver.find_element(By.NAME, 'btn1').click()
         time.sleep(4)
-        #folder = 'RAA00360-EX1-071218' /html/body/section[2]/div[2]/div/div/div/div[1]/div/div/div[2]/div[2]/table/tbody/tr/td[4]/b/a
         fileName = xid.replace(r'/', '-')
         time.sleep(3)
         proj_name = driver.find_element(By.XPATH, '//*[@id="approvedTable"]/tbody/tr/td[6]').text
@@ -176,7 +153,7 @@ with open("k-total-units (1).csv","r") as csvfile:
         
         driver.find_element(By.XPATH, "//a[contains(text(), 'Project Details')]").click()
         time.sleep(1)
-        # Locate and extract Project Type
+
         project_type_element = wait.until(
             EC.presence_of_element_located(
                 (By.XPATH, '//div[contains(@class, "row") and contains(., "Project Type")]/div[2]/p')
@@ -184,13 +161,11 @@ with open("k-total-units (1).csv","r") as csvfile:
         )
         project_type = project_type_element.text.strip()
 
-        # Locate and extract Project Status
         project_status_element = driver.find_element(
             By.XPATH, '//div[contains(@class, "row") and contains(., "Project Status")]/div[4]/p'
         )
         project_status = project_status_element.text.strip()
 
-        # Locate and extract Project Status
         try:
             project_propCOmp_element = driver.find_element(
                 By.XPATH, '//div[contains(@class, "row") and contains(., "Proposed Project Completion Date")]/div[4]/p'
@@ -207,7 +182,7 @@ with open("k-total-units (1).csv","r") as csvfile:
             )
         )
         project_address = project_address_element.text.strip()
-          # Extract Type of Inventory
+    
         try:
             inventory_type = wait.until(
                 EC.presence_of_element_located(
@@ -216,28 +191,28 @@ with open("k-total-units (1).csv","r") as csvfile:
             ).text.strip()
         except:
             inventory_type = ""
-        # Extract No of Inventory
+        
         try:
             no_of_inventory = driver.find_element(
                 By.XPATH, '//div[contains(@class, "row") and contains(., "No of Inventory")]/div[4]/p'
             ).text.strip()
         except:
             no_of_inventory = ""
-        # Extract Carpet Area (Sq Mtr)
+        
         try:
             carpet_area = driver.find_element(
             By.XPATH, '//div[contains(@class, "row") and contains(., "Carpet Area (Sq Mtr)")]/div[2]/p'
             ).text.strip()
         except:
            carpet_area = ""
-        # Extract Total Open Area
+       
         try:
             total_open_area = driver.find_element(
             By.XPATH, '//div[contains(@class, "row") and contains(., "Total Open Area (Sq Mtr)")]/div[2]/p'
             ).text.strip()
         except:
            total_open_area = ""
-        # Extract Total Area Of Land (Sq Mtr)
+     
         try:
             total_area_land = driver.find_element(
             By.XPATH, '//div[contains(@class, "row") and contains(., "Total Area Of Land (Sq Mtr)")]/div[2]/p'
@@ -247,13 +222,12 @@ with open("k-total-units (1).csv","r") as csvfile:
         
 
         try:
-            # Extract Area of exclusive balcony/verandah
             balcony_area = driver.find_element(
                 By.XPATH, '//div[contains(@class, "row") and contains(., "Area of exclusive balcony/verandah")]/div[4]/p'
             ).text.strip()
         except:
             balcony_area = ''
-        # Extract Area of exclusive open terrace if any
+
         try:
             terrace_area = driver.find_element(
                 By.XPATH, '//div[contains(@class, "row") and contains(., "Area of exclusive open terrace if any")]/div[2]/p'
@@ -262,7 +236,7 @@ with open("k-total-units (1).csv","r") as csvfile:
             terrace_area = ""
        
         try:
-            # Find the Architects section
+           
             section_title = wait.until(
                 EC.presence_of_element_located(
                     (By.XPATH, '//*[contains(text(), "Architects")]')
@@ -270,7 +244,7 @@ with open("k-total-units (1).csv","r") as csvfile:
             )
             print("Architects section found!")
             
-            # Find the Name element in the same section
+            
             arch_name = driver.find_element(
                 By.XPATH, '//*[contains(text(), "Architects")]/../../following-sibling::div//div[contains(@class, "row") and contains(., "Name")]/div[2]/p'
             ).text.strip()
@@ -290,10 +264,8 @@ with open("k-total-units (1).csv","r") as csvfile:
             try:
                 for target_text in target_texts:
                     try:
-                        # Wait until the page's body is fully loaded
+                      
                         wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, "body")))
-
-                        # Locate the element containing the target text
                         elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '{target_text}')]")
                         
                         if elements:
@@ -304,15 +276,13 @@ with open("k-total-units (1).csv","r") as csvfile:
                             pdf_url = next_link.get_attribute("href")
                             print(f"Clicking link for '{target_text}'...")
                             if target_text == "Project Photo Uploaded":
-                                    file_extension = ".jpg"  # Assuming the image is in JPG format
+                                    file_extension = ".jpg" 
                                     file_name = f"{clean_filename(xid)}_Project_Photo{file_extension}"
                                     file_path = os.path.join(destination_dir, file_name)
                                     download_image(pdf_url, file_path)
                             else:
                                 download_FP_with_ctrl_s(pdf_url, target_text, xid)
                             
-                           
-                            # Switch back to the original tab
                             driver.switch_to.window(driver.window_handles[0])
                         else:
                             print(f"Text '{target_text}' not found on the page.")
@@ -323,14 +293,6 @@ with open("k-total-units (1).csv","r") as csvfile:
             except Exception as e:
                 print("An error occurred:", e)
 
-            # import pyautogui
-            # from PIL import ImageGrab, Image
- 
-            # element = driver.find_element(By.XPATH, "//*[contains(text(), 'Project Photo Uploaded')]/following::a[1]")
-            # photo_url = element.get_attribute("href")
-            # print(f"Project Photo URL: {photo_url}")
-            # element.screenshot("captcha.png")
- 
                 
         except:
             pass
@@ -339,16 +301,13 @@ with open("k-total-units (1).csv","r") as csvfile:
         
          
         try:
-    # Load the web page
+
             total_flats_value = ""
             occupancy_date_value = ""
-
-            # Locate the tab with href="#completion"
             tab = driver.find_element(By.XPATH, "//a[contains(text(), 'Completion Details')]")
             
-            # Check if the tab exists and is visible
             if tab.is_displayed():
-                # Click the tab
+           
                 tab.click()
                 print("Tab clicked successfully!")
                 try:
@@ -368,11 +327,8 @@ with open("k-total-units (1).csv","r") as csvfile:
         except NoSuchElementException:
             print("The tab with href='#completion' does not exist on this page.")
         try:
-            
-            # File name
-            csv_file = "karnatka_project_details_new.csv"
 
-            # Check if the file exists
+            csv_file = "karnatka_project_details_new.csv"
             file_exists = os.path.isfile(csv_file)
 
             # Define headers
@@ -396,23 +352,17 @@ with open("k-total-units (1).csv","r") as csvfile:
             with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
                 
-                # Write the header if the file doesn't exist
                 if not file_exists:
                     writer.writerow(headers)
-                
-                # Write the data row
+
                 writer.writerow(row_data)
 
             print(f"Data successfully saved to {csv_file}")
-
-            
             driver.back()
-                
-            
+                  
         except:
-            #driver.back()
             continue
-        print("HERE1")
+
         
         
           
