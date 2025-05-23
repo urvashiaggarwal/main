@@ -1,10 +1,9 @@
 import requests
 import pandas as pd
 
-# Replace with your actual Google Maps API Key
+# Google Maps API Key
 API_KEY = "AIzaSyD4muQalGhg3waN48avO3PqHpliWppT-TI"
 
-# Define the locality
 locality = "Noida Sector 18"
 
 # Function to get Place ID of a locality
@@ -45,20 +44,18 @@ def get_landmarks(lat, lng, radius=2000):
 place_id, lat, lng = get_place_id(locality)
 
 if place_id:
-    print(f"📍 Place ID for '{locality}': {place_id}")
-    print(f"📌 Coordinates: Latitude {lat}, Longitude {lng}")
+    print(f" Place ID for '{locality}': {place_id}")
+    print(f" Coordinates: Latitude {lat}, Longitude {lng}")
 
-    # Get landmarks near the locality
     landmarks = get_landmarks(lat, lng)
 
-    # Convert to DataFrame and display results
     df = pd.DataFrame(landmarks)
-    print("\n🗺️ Nearby Landmarks & Points of Interest:")
+    print("\n Nearby Landmarks & Points of Interest:")
     print(df)
 
     # Save to CSV
     df.to_csv(f"{locality.replace(' ', '_')}_landmarks.csv", index=False)
-    print("\n✅ Data saved successfully!")
+    print("\nData saved successfully!")
 
 else:
-    print("❌ Could not retrieve Place ID.")
+    print("Could not retrieve Place ID.")

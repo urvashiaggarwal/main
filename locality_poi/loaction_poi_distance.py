@@ -1,4 +1,3 @@
-
 import requests 
 import json, csv
 import math, gmaps
@@ -6,7 +5,7 @@ import pandas as pd
 
 # Function to calculate the Haversine distance between two points on the Earth
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371.0  # Radius of the Earth in kilometers
+    R = 6371.0  
     lat1 = math.radians(lat1)
     lon1 = math.radians(lon1)
     lat2 = math.radians(lat2)
@@ -44,7 +43,7 @@ def get_place_details(place_id):
 # Open the CSV file with latitudes and longitudes
 with open('orignal-lat-long.csv', 'r') as csvfile:
     reader = csv.reader(csvfile)
-    next(reader, None)  # Skip header if it exists
+    next(reader, None)  
     
     for row in reader:
         xid = row[0]
@@ -55,10 +54,9 @@ with open('orignal-lat-long.csv', 'r') as csvfile:
         my_lng = float(row[7])  # Longitude
         url = f'https://maps.googleapis.com/maps/api/place/textsearch/json?query={string}&key={api_key}'
 
-        # Making a GET request for JSON data
         response = requests.get(url)
 
-        # Check if request was successful (status code 200)
+        # Check if request was successful 
         if response.status_code == 200:
             data = response.json()
             table_data = []
@@ -80,12 +78,12 @@ with open('orignal-lat-long.csv', 'r') as csvfile:
                         'latitude': lat,
                         'longitude': lng,
                         'place_id': place_id,
-                        'distance_km': distance  # Store the place_id as well
+                        'distance_km': distance 
                     })
-                    #print(locations)
+                    
 
-            if locations:  # Only proceed if there are locations within 1 km
-                # Fetch additional details for each location within 1 km
+            if locations:  
+            
                 for loc in locations:
                      
                     place_details = get_place_details(loc['place_id'])
@@ -94,20 +92,17 @@ with open('orignal-lat-long.csv', 'r') as csvfile:
                             'user_ratings_total': place_details.get('user_ratings_total', 'N/A')
                         })
                         
-                        # Print each restaurant details including extra information
                         print(f"Restaurant Name: {loc['name']}")
                         print(f"Latitude: {loc['latitude']}, Longitude: {loc['longitude']}")
                         print(f"Place ID: {loc['place_id']}, Distance: {loc['distance_km']:.2f} km")
                         print(f"User Ratings Total: {loc['user_ratings_total']}")
 
-                        # Add the location to table_data
                         table_data.append(loc)
 
                 # Create DataFrame and save to CSV (append mode)
                 df = pd.DataFrame(table_data)
                 df.to_csv('closest-place_id-total_ratings.csv', mode='a', header=False, index=False)
 
-                # Print the final URL
                 print(f"Request URL: {response.url}")
               
             else:
