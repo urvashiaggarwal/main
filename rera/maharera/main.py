@@ -7,18 +7,14 @@ from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
 import time
 
-# Setup WebDriver
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service)
 
-# Open the webpage
 url = "https://maharera.maharashtra.gov.in/projects-search-result"  
 driver.get(url)
 start_time = time.time()
 
-# Wait for the page to load properly
 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.container")))
-
 all_data = []
 
 while True:
@@ -50,7 +46,7 @@ while True:
             print("No more pages to navigate.")
             break
 
-        driver.get(next_href)  # Navigate to the next page
+        driver.get(next_href)  
 
     except Exception as e:
         print("Error or no more pages:", e)
