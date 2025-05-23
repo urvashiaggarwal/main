@@ -1,7 +1,6 @@
 import os
 import csv
 import time
-import shutil
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,8 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 CSV_FILE = "data-portal-query-set.csv"
 DOWNLOAD_DIR = os.path.expanduser("~/Downloads")  
 
-# Initialize WebDriver
-driver = webdriver.Firefox()
+driver = webdriver.Chrome()
 driver.get("http://10.10.17.130:11011/login")
 driver.maximize_window()
 
@@ -28,11 +26,10 @@ with open(CSV_FILE, mode="r", newline="") as file:
     reader = csv.DictReader(file)
     for row in reader:
         print(row)
-        if row['flag'].strip().lower() == "true":  # Process only rows where flag is True
+        if row['flag'].strip().lower() == "true":  
             title = row["title"]
             query = row["query"]
 
-            # Navigate to "Add Data Request"
             driver.find_element(By.XPATH, '//a[text()= "Add Data Request"]').click()
             time.sleep(2)
 
@@ -67,19 +64,16 @@ with open(CSV_FILE, mode="r", newline="") as file:
                     timen = timen + 10
                     time.sleep(5)
                     driver.find_element(By.XPATH,'//*[@id="accuracy_data"]/tbody/tr[1]/td[8]/a[1]').click()
-            time.sleep(5)  # Wait for file to appear in download folder
+            time.sleep(5)  
 
             # Find the latest downloaded file
             files = sorted(os.listdir(DOWNLOAD_DIR), key=lambda x: os.path.getctime(os.path.join(DOWNLOAD_DIR, x)), reverse=True)
             if files:
                 downloaded_file = os.path.join(DOWNLOAD_DIR, files[0])
                 new_file_path = os.path.join(DOWNLOAD_DIR, f"{title}.csv")
-
-                print(f"Renaming {downloaded_file} to {new_file_path}")  # Debugging statement
+                print(f"Renaming {downloaded_file} to {new_file_path}")  
                 os.rename(downloaded_file, new_file_path)
-                shutil.copy(new_file_path, os.path.join(os.getcwd(), os.path.basename(new_file_path)))
 
-                # Update row data
                 row["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 row["flag"] = "false"
                 row["folder_path"] = new_file_path
