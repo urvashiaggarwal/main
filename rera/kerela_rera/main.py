@@ -6,11 +6,9 @@ from selenium.webdriver.support.ui import Select
 import pandas as pd
 import time
 
-# Set up Selenium WebDriver
-driver = webdriver.Chrome()  # Ensure chromedriver is in PATH
+driver = webdriver.Chrome()  
 driver.get("https://reraonline.kerala.gov.in/SearchList/Search#")
 
-# List to store extracted data
 all_data = []
 
 # Click on "Advanced Search"
@@ -19,14 +17,13 @@ advanced_search = WebDriverWait(driver, 10).until(
 )
 advanced_search.click()
 
-# Wait for the District dropdown to load
 WebDriverWait(driver, 10).until(
     EC.presence_of_element_located((By.ID, 'District'))
 )
 
 # Iterate through each district option
 while True:
-    # Reinitialize Select object inside loop
+ 
     district_dropdown = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, 'District'))
     )
@@ -35,20 +32,18 @@ while True:
     district_options = [option.text.strip() for option in select.options if option.text.strip().lower() != "select district"]
 
     if not district_options:
-        break  # Exit if no districts found
+        break  
 
     for district_name in district_options:
         print(f"Processing district: {district_name}")
         time.sleep(5)
         # Select the district
         select.select_by_visible_text(district_name)
-        time.sleep(5)  # Allow UI to update
+        time.sleep(5) 
 
         # Click Search button
         search_button = driver.find_element(By.XPATH, '//*[@id="btnSearch"]')
         search_button.click()
-
-        # Wait for results to load
         time.sleep(5)
 
         try:
@@ -60,7 +55,7 @@ while True:
 
             # Pagination loop
             while True:
-                # Get all rows except header
+
                 rows = table.find_elements(By.TAG_NAME, 'tr')
 
                 for row in rows:
@@ -72,22 +67,20 @@ while True:
 
                         all_data.append([district_name, project_name, promoter_name, certificate_no])
 
-                # Check if there is a next page **after processing all rows**
+                # Check if there is a next page after processing all rows
                 try:
                    
                     next_page = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.XPATH, '//*[@id="btnNext"]'))
                     )
-                    
-                    # next_page = driver.find_element(By.ID, "btnNext")
+        
                     if next_page.get_attribute("disabled"):
-                        break  # Exit pagination loop if disabled
+                        break  
                     print("Next page found")
                     driver.execute_script("arguments[0].click();", next_page)
-                    #next_page.click()
-                    time.sleep(5)  # Allow new page to load
+                    time.sleep(5) 
                 except:
-                    break  # Exit pagination loop if "Next" button is not found
+                    break 
 
         except Exception as e:
             print(f"No results for {district_name}: {e}")
@@ -97,14 +90,12 @@ while True:
             EC.element_to_be_clickable((By.LINK_TEXT, "Advance Search"))
         )
         advanced_search.click()
-        time.sleep(5)  # Allow UI to update
+        time.sleep(5)  
         district_dropdown = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, 'District'))
         )
         select = Select(district_dropdown)
 
-
-# Close the driver
 driver.quit()
 
 # Save data to CSV
