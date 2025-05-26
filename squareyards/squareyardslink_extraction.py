@@ -1,12 +1,10 @@
 import requests
 import pandas as pd
 import time
- 
-# Load Excel file
+
 file_path = r"List.xlsx"
 df = pd.read_excel(file_path)
  
-# Ensure column names are correct
 if 'proj_name' not in df.columns or 'City' not in df.columns:
     raise ValueError("Excel file must contain 'proj_name' and 'city' columns")
  
@@ -15,7 +13,7 @@ CX = "85dfa13c72e034042"
 output_data = []
  
 df = df.iloc[90:100]
-# Process rows from 101 to 150
+# Process rows 
 for _, row in df.iterrows():
     time.sleep(2)
     xid = str(row["XID"]).strip()
@@ -27,15 +25,15 @@ for _, row in df.iterrows():
     response = requests.get(url)
     data = response.json()
    
-    magic_link = "Not Found"
+    square_link = "Not Found"
     if "items" in data:
         for item in data["items"]:
             if "squareyards.com" in item["link"] :
-                magic_link = item["link"]
-                break  # Stop once we find the first squareyards.com link
+                square_link = item["link"]
+                break  
         
-    print(f"XID:{xid},Project: {proj_name}, City: {City}, Link: {magic_link}")
-    output_data.append([xid,proj_name, City, magic_link])
+    print(f"XID:{xid},Project: {proj_name}, City: {City}, Link: {square_link}")
+    output_data.append([xid,proj_name, City, square_link])
  
 # Save results to an Excel file
 output_df = pd.DataFrame(output_data, columns=["XID","Project Name", "City", "Squareyards.com Link"])

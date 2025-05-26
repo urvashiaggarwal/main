@@ -16,8 +16,7 @@ api_cycle = itertools.cycle(API_KEYS)
 
 # Settings for rate limiting
 API_SWITCH_TIME = random.uniform(6, 8)  
-MAX_REQUESTS_PER_MINUTE = 50  
-REQUEST_DELAY = random.uniform(2.5, 3)  
+MAX_REQUESTS_PER_MINUTE = 50  REQUEST_DELAY = random.uniform(2.5, 3)  
 
 last_switch_time = time.time()
 
