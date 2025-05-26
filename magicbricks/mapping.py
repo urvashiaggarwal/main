@@ -1,13 +1,12 @@
 import pandas as pd
 from fuzzywuzzy import fuzz
- 
-# Load the CSV files
+
 print("Loading CSV files...")
 csv1 = pd.read_csv("99acres.csv")
 csv2 = pd.read_csv("magicbricks.csv")
 print("CSV files loaded successfully.")
  
-# Define column mapping between csv1 (99acres) and csv2 (housing)
+# Column mapping between csv1 (99acres) and csv2 (housing)
 column_mapping = {
     "name": "Name",
     "builderinfo_name": "Builder",
@@ -17,11 +16,8 @@ column_mapping = {
 
 }
  
-# Prepare lists to store matched and mismatched data
 matches = []
 mismatches = []
- 
-print("Starting the matching process...")
  
 # Function to preprocess text for better matching
 def preprocess(text):
@@ -37,9 +33,9 @@ for index, row in csv2.iterrows():
    
     if match_row.empty:
         print(f"XID {xid} not found in 99acres, skipping...")
-        continue  # Skip if XID not found in 99acres
+        continue  
    
-    match_row = match_row.iloc[0]  # Convert to series
+    match_row = match_row.iloc[0] 
     mismatch_entry = {"XID": xid}
     is_match = True
    
@@ -61,11 +57,6 @@ for index, row in csv2.iterrows():
         print(f"XID {xid} has mismatches.")
         mismatches.append(mismatch_entry)
  
-print("Matching process completed.")
- 
-# Convert results to DataFrame and save to CSV
-print("Saving matches.csv...")
 pd.DataFrame(matches).to_csv("matches.csv", index=False)
-print("Saving mismatches.csv...")
 pd.DataFrame(mismatches).to_csv("mismatches.csv", index=False)
 print("Process completed successfully!")

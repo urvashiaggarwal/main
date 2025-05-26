@@ -1,6 +1,5 @@
 import time
 import csv
-import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -8,52 +7,45 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import openpyxl
+import re
  
-# Setup Selenium WebDriver
 options = Options()
-#options.add_argument("--headless")  # Run in headless mode
 options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
 options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
  
-# Initialize WebDriver
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=options)
  
-# Read input CSV (Skipping first row)
-input_file = "Copy of XID URL Data.xlsx"
-output_file = "magicbricks_manual.csv"
-floor_plans_csv = "floor_manual.csv"
-
-# Read the input CSV and extract XID and Square Yards Phase URLs
+input_file = "individualCrawler/auditUrls.csv"
+output_file = "individualCrawler/mbdata.csv"
+floor_plans_csv = "individualCrawler/floor_magicbricks.csv"
 
 urls_xids = []
-workbook = openpyxl.load_workbook(input_file)
-sheet = workbook.active
 
-# Iterate through rows in the Excel sheet
-for row in sheet.iter_rows(min_row=2, values_only=True):  # Assuming the first row is the header
-    xid = row[0]  # Assuming "XID Number" is in the first column
-    for phase_index in range(5, 9):  # Square Yards Phases are in columns 14 to 17 (0-based index)
-        url = row[phase_index]
+# Read the input CSV and extract XID and Square Yards Phase URLs
+with open(input_file, "r", newline="", encoding="utf-8") as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        xid = row["XID"]
+        
+        url = row["magicbricks.com link"]
         if url:
-            url = url.strip()
+            if not url.startswith("http://") and not url.startswith("https://"):
+                url = "http://" + url 
             if 'pdpid' in url:
-                urls_xids.append((xid, url, f"Magic Bricks Phase {phase_index - 4}"))
+                urls_xids.append((xid, url))
 
-# Option to start from a specific index
-urls_xids = urls_xids[439:]
+urls_xids=urls_xids[:]
 
-# Prepare output data list
 data_list = []
 
 # Iterate over each XID and its corresponding Square Yards Phase URLs
-for xid, url, phase in urls_xids:
+for xid, url in urls_xids:
     floor_plans = []
-    print(f"Opening URL: {url} for XID: {xid} and Phase: {phase}")
+    print(f"Opening URL: {url} for XID: {xid} ")
     driver.get(url)
-    time.sleep(3)  # Wait for elements to load
+    time.sleep(3) 
 
     operating_cities = "N/A"
     experience = "N/A"
@@ -69,9 +61,26 @@ for xid, url, phase in urls_xids:
 
     # Extracting data
     try:
-        name = driver.find_element(By.CSS_SELECTOR, "div.pdp__name h1").text.strip()
+        project_name = driver.find_element(By.CSS_SELECTOR, ".pdp__name h1").text.strip()
     except:
-        name = "N/A"
+        project_name = "N/A"
+
+    try:
+        price_range_element = driver.find_element(By.CSS_SELECTOR, "div.pdp__pricecard--price")
+        price_range = price_range_element.text.strip()
+        price_range = price_range.replace("₹", "Rs").strip()
+        print(price_range)
+
+    except:
+        price_range = "N/A"
+
+    # Extract image count
+    try:
+          
+        img_count = driver.find_element(By.CSS_SELECTOR, ".pdp__imgcount").get_attribute("textContent").strip()
+        print("Image Count:", img_count)
+    except:
+        img_count = "N/A"
 
     try:
         builder = driver.find_element(By.CSS_SELECTOR, "div.pdp__developerName").text.replace("By ", "").strip()
@@ -108,9 +117,8 @@ for xid, url, phase in urls_xids:
     try:
         
         driver.execute_script("arguments[0].click();", developer_link_element)
-        time.sleep(3)  # Wait for builder section to load
+        time.sleep(3)  
         print("Clicked 'Explore Builder' successfully.")
-        # Switch to the new tab
         driver.switch_to.window(driver.window_handles[1])
         
         try:
@@ -119,11 +127,23 @@ for xid, url, phase in urls_xids:
         except:
             operating_cities = "N/A"
 
+            experience_text = "N/A"
+
         try:
-            experience_element = driver.find_element(By.XPATH, "//div[contains(text(), 'Experience')]/following-sibling::div")
-            experience = experience_element.text.strip()
-        except:
-            experience = "N/A"
+            # Get all label-value item pairs
+            items = driver.find_elements(By.CSS_SELECTOR, ".dev-detail__overview__deals__list--item")
+
+            experience_text = "N/A"
+            for item in items:
+                label = item.find_element(By.CSS_SELECTOR, ".dev-detail__overview__deals__list--item--label").text.strip()
+                value = item.find_element(By.CSS_SELECTOR, ".dev-detail__overview__deals__list--item--value").text.strip()
+                if "experience" in label.lower():
+                    experience_text = value
+                    break
+
+        except Exception as e:
+            experience_text = "N/A"
+            print("Error:", e)
 
         try:
             deals_property_element = driver.find_element(By.XPATH, "//div[contains(text(), 'Deals in Property Type')]/following-sibling::div")
@@ -137,7 +157,6 @@ for xid, url, phase in urls_xids:
         except:
             office_address = "N/A"
 
-
         # Close the new tab and switch back to the original tab
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
@@ -149,14 +168,7 @@ for xid, url, phase in urls_xids:
     try:
         address = driver.find_element(By.CSS_SELECTOR, "div.pdp__location").text.strip()
     except:
-        address = "N/A"
-
-    try:
-        price = driver.find_element(By.XPATH, '//*[@id="nav-overview"]/div[2]/div[1]/div[1]/div').text.strip()
-        price = price.replace("₹", "Rs").strip()
-        print(price)
-    except:
-        price = "N/A"
+        address = "N/A"  
 
     try:
         flat_type = driver.find_element(By.CSS_SELECTOR, "div.pdp__bhkposs--data span.pdp__bhkposs--bhk").text.strip()
@@ -183,9 +195,9 @@ for xid, url, phase in urls_xids:
                         value = value.replace("₹", "Rs").strip()
                     property_details[label] = value
             except:
-                continue  # Skip if elements not found
+                continue  
     except:
-        pass  # If no property details found, continue with "N/A"
+        pass  
 
     try:
         super_area_element = driver.find_element(By.CSS_SELECTOR, "div.pdp__florpripln--brief span.text-semibold")
@@ -198,17 +210,14 @@ for xid, url, phase in urls_xids:
         except:
             super_area = "N/A"
 
-
-
     try:
         view_amenities = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'View Amenities')]"))
         )
         driver.execute_script("arguments[0].click();", view_amenities)
-        time.sleep(3)  # Wait for amenities section to load
+        time.sleep(3) 
     except:
-        print("View Amenities' button not found or could not be clicked.")
-    
+        print("View Amenities' button not found or could not be clicked.")   
 
     amenities = []
     try:
@@ -234,30 +243,21 @@ for xid, url, phase in urls_xids:
         # Locate the parent div that contains the USPs
         usp_section = usp_header.find_element(By.XPATH, "./following-sibling::div")
 
-        # Extract all list items (USPs)
+        # Extract all list items (USPs + Location Advantages)
         usp_elements = usp_section.find_elements(By.TAG_NAME, "li")
 
         usps = []
-        location_advantages = []
-        found_location_advantages = False
 
         for li in usp_elements:
             text = li.text.strip()
             if text:
-                if "Location Advantages" in text:
-                    found_location_advantages = True  # Start extracting location advantages
-                elif found_location_advantages:
-                    location_advantages.append(text)  # Store in location advantages
-                else:
-                    usps.append(text)  # Store in general USPs
+                usps.append(text)
 
-        # Join USPs into a single string
         joined_usps = " | ".join(usps)
-        joined_location_advantages = " | ".join(location_advantages)
+        print(f"USPs: {joined_usps}")
     except:
         joined_usps = "N/A"
-        joined_location_advantages = "N/A"
-    
+
     try:
         print("Extracting Specifications...")
 
@@ -283,12 +283,12 @@ for xid, url, phase in urls_xids:
                         else:
                             extracted_text = [li.text.strip() for li in li_elements if li.text.strip()]
                         specifications.extend(extracted_text)
-                        break  # Stop checking other cases if extraction is successful
+                        break  
 
             except Exception as e:
                 print(f"Error in Nested UL Extraction: {str(e)}")
 
-        # Case 2: Extract specifications from <ul> with <br> separators (if UL exists and Case 1 failed)
+        # Case 2: Extract specifications from <ul> with <br> separators 
             if not specifications:
                 try:
                     ul_element = spec_section.find_element(By.TAG_NAME, "ul")
@@ -298,12 +298,12 @@ for xid, url, phase in urls_xids:
                         specifications.extend(extracted_text)
         
                 except:
-                    pass  # If not found, move to next case
+                    pass 
 
             if not specifications:
                 try:
-                    ul_element = spec_section.find_element(By.TAG_NAME, "ul")  # Find UL containing divs
-                    div_elements = ul_element.find_elements(By.TAG_NAME, "div")  # Get all divs inside UL
+                    ul_element = spec_section.find_element(By.TAG_NAME, "ul") 
+                    div_elements = ul_element.find_elements(By.TAG_NAME, "div")  
 
                     current_category = None
                     current_subcategory = None
@@ -313,21 +313,17 @@ for xid, url, phase in urls_xids:
 
                         if text:
                             if not current_category:
-                                current_category = text  # First div is main category
+                                current_category = text  
                             elif not current_subcategory:
-                                current_subcategory = text  # Second div is subcategory
+                                current_subcategory = text  
                             else:
-                                # Third div onwards is the value
+                                
                                 formatted_entry = f"{current_category} → {current_subcategory} → {text}"
                                 specifications.append(formatted_entry)
-                                current_subcategory = None  # Reset for the next subcategory
+                                current_subcategory = None  
                 except Exception as e:
                     print(f"Error in UL with Div Extraction: {str(e)}")
 
-
-            
-
-            # Convert list to a single string with newlines
             specifications_text = "\n".join(specifications) if specifications else "N/A"
 
         except:
@@ -341,7 +337,7 @@ for xid, url, phase in urls_xids:
             EC.element_to_be_clickable((By.CLASS_NAME, "readmore"))
         )
         driver.execute_script("arguments[0].click();", read_more_button)
-        time.sleep(2)  # Wait for expanded content to load
+        time.sleep(2)  
         print("Clicked 'Read More' successfully.")
         try:
             builder_info_element = driver.find_element(By.CSS_SELECTOR, "div.popup__body.aboutdeveloper")
@@ -364,7 +360,7 @@ for xid, url, phase in urls_xids:
             EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Read More')]"))
         )
         driver.execute_script("arguments[0].click();", read_more)
-        time.sleep(2)  # Wait for expanded content to load
+        time.sleep(2)  
         print(" Clicked 'Read More' successfully.")
     except:
         print(" 'Read More' button not found or could not be clicked.")
@@ -415,7 +411,8 @@ for xid, url, phase in urls_xids:
     try:
         
         print("Extracting Floor Plans...")
-# Locate the main container with class 'pdp__florpripln__cards'
+
+# Main container 
         try:
             floor_plan_container = driver.find_element(By.CLASS_NAME, "pdp__florpripln__cards")
             
@@ -448,87 +445,151 @@ for xid, url, phase in urls_xids:
                         possession_date = None
 
                     if any([unit_size, unit_type, area_type, price, possession_date]):
-                        floor_plans.append([xid,phase, unit_type or "Type Not Available", unit_size or "Size Not Available", area_type or "Area Not Available", price or "Price Not Available", possession_date or "Possession Not Available"])
-
-                    
-                    # If no floor plan cards are found, try extracting from the alternative section
-                    if not floor_plans:
-                        try:
-                            alternative_floor_plan_cards = driver.find_elements(By.CSS_SELECTOR, "div.pdp__prop__card")
-                            for card in alternative_floor_plan_cards:
-                                try:
-                                    # Extract unit type and size
-                                    unit_details = card.find_element(By.CSS_SELECTOR, "div.pdp__prop__card__bhk span").text.strip()
-                                    unit_type, unit_size = unit_details.split(" ", 1) if " " in unit_details else (unit_details, "Size Not Available")
-
-                                    # Extract price
-                                    try:
-                                        price = card.find_element(By.CLASS_NAME, "pdp__prop__card__price").text.strip()
-                                    except:
-                                        price = "Price Not Available"
-
-                                    # Extract possession date
-                                    try:
-                                        possession_date = card.find_element(By.CLASS_NAME, "pdp__prop__card__cons").text.strip()
-                                    except:
-                                        possession_date = "Possession Not Available"
-
-                                    # Append extracted details
-                                    floor_plans.append([xid, phase, unit_type, unit_size, "Area Not Available", price, possession_date])
-                                except Exception as e:
-                                    print(f"Skipping an alternative card due to error: {e}")
-                        except:
-                            print("No alternative floor plan section found.")
-                    # Only append if at least one of the key details is present
-                    
+                        floor_plans.append([xid, unit_type or "Type Not Available", unit_size or "Size Not Available", area_type or "Area Not Available", price or "Price Not Available", possession_date or "Possession Not Available"])
+                
                 except Exception as e:
                     print(f"Skipping a card due to error: {e}")
 
-                # Click the next button after every 2 records
+                # Click the next button 
                 if (index + 1) % 2 == 0:
                     try:
                         next_button = driver.find_element(By.ID, "fp-arrow-next")
                         driver.execute_script("arguments[0].click();", next_button)
-                        time.sleep(2)  # Wait for the next set of floor plans to load
+                        time.sleep(2)  
                     except:
                         print("Next button not found or could not be clicked.")
                         break
 
         except:
+            # If no floor plan cards are found, extract from the alternative section
+            if not floor_plans:
+                try:
+                    alternative_floor_plan_cards = driver.find_elements(By.CSS_SELECTOR, "div.pdp__prop__card")
+                    for card in alternative_floor_plan_cards:
+                        try:
+                            # Extract unit type and size
+                            unit_details = card.find_element(By.CSS_SELECTOR, "div.pdp__prop__card__bhk span").text.strip()
+                            unit_type, unit_size = unit_details.split(" ", 1) if " " in unit_details else (unit_details, "Size Not Available")
+
+                            # Extract price
+                            try:
+                                price = card.find_element(By.CLASS_NAME, "pdp__prop__card__price").text.strip()
+                            except:
+                                price = "Price Not Available"
+
+                            # Extract possession date
+                            try:
+                                possession_date = card.find_element(By.CLASS_NAME, "pdp__prop__card__cons").text.strip()
+                            except:
+                                possession_date = "Possession Not Available"
+
+                            # Append extracted details
+                            floor_plans.append([xid,  unit_type, unit_size, "Area Not Available", price, possession_date])
+                        except Exception as e:
+                            print(f"Skipping an alternative card due to error: {e}")
+                except:
+                    print("No alternative floor plan section found.")
             print("No floor plan container found on this page.")
-
-
-        # Print extracted floor plans for debugging
-        for plan in floor_plans:
-            print(plan)
 
     except Exception as e:
         print(f"Error extracting floor plans: {e}")
 
+    # Extract review count and rating
+    try:
+        review_section = driver.find_element(By.CSS_SELECTOR, "div.pdp__review")
+        review_count_element = review_section.find_element(By.CSS_SELECTOR, "a.pdp__review--count")
+        review_count = review_count_element.text.split()[0]  
+        print(f"Review Count: {review_count}")
 
-    # Append data to list
+    except:
+        review_count = "N/A"
+        
+    landmarks_dict = {}
+
+    try:
+        landmark_section = driver.find_element(By.ID, "nearbylandmarksWeb")
+        cards = landmark_section.find_elements(By.CLASS_NAME, "pdp__landmarks__card")
+        
+        for card in cards:
+            try:
+                category = card.find_element(By.CLASS_NAME, "pdp__landmarks__card__head").text.strip()
+                wraps = card.find_elements(By.CLASS_NAME, "pdp__landmarks__card--wrap")
+                
+                landmarks = []
+                for wrap in wraps:
+                    name = wrap.find_element(By.CLASS_NAME, "pdp__landmarks__card__item").text.strip()
+                    distance = wrap.find_element(By.CLASS_NAME, "pdp__landmarks__card__item--bold").text.strip()
+                    landmarks.append(f"{name} {distance}")
+                
+                landmarks_dict[category] = ", ".join(landmarks)
+            except:
+                continue
+    except Exception as e:
+        print("Error extracting landmarks:", e)
+
+    formatted_landmarks = " | ".join([f"{cat}: {places}" for cat, places in landmarks_dict.items()])
+    print("Landmarks:", formatted_landmarks)
+
+  
+    try:
+        #FAQ answer elements
+        faq_elements = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CLASS_NAME, "pdp__faq__ans"))
+        )
+
+        rera_number = "Not found"
+
+        # Loop through each element and find the one with RERA info
+        for elem in faq_elements:
+            text = elem.text.strip()
+            if "RERA number" in text:
+                match = re.search(r'\[([A-Z0-9/\-]+)', text)
+                if match:
+                    rera_number = match.group(1)
+                    break  
+
+    except Exception as e:
+        rera_number = "N/A"
+        print("Error:", e)
+
+    print("RERA Number:", rera_number)
+
+    try:
+
+        super_area_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "sarange"))
+        )
+
+        area_text = super_area_element.find_element(By.CLASS_NAME, "text-semibold").text.strip()
+
+    except Exception as e:
+        area_text = "N/A"
+        print("Error:", e)
+
+    # Extract number of videos from Market Expert Reviews section
+    try:
+        market_expert_section = driver.find_element(By.ID, "expertReveiw")
+        video_elements = market_expert_section.find_elements(By.CLASS_NAME, "pdp__marketExpt__card")
+        video_count = len(video_elements)
+        print(f"Number of videos: {video_count}")
+    except:
+        video_count = "N/A"
+
     data_list.append([
-        xid, url, name,phase, builder, developer_link, operating_cities, experience, deals_property, office_address, total_projects, completed_projects, projects_ongoing, builder_info, address, price, flat_type,
-        property_details["Price/sq.ft"], property_details["Total Units"],
-        property_details["Project Size"], property_details["BHK"], ", ".join(amenities), amenity_count, joined_usps, joined_location_advantages, specifications_text, property_details2["Project Type"], property_details2["Property Type"], property_details2["Status"], property_details2["Launch Date"], property_details2["Possession Date"], property_details2["Total Towers"]
-    ])
+        xid, url, project_name, builder,address,price_range,property_details["Price/sq.ft"],property_details2["Property Type"],property_details2["Possession Date"],formatted_landmarks,property_details["Project Size"],area_text,property_details2["Launch Date"],rera_number,property_details2["Total Towers"], property_details["Total Units"],joined_usps,flat_type, amenity_count,", ".join(amenities),img_count,specifications_text,review_count, total_projects, completed_projects, projects_ongoing, builder_info,property_details2["Status"], video_count ])
 
-    # Save to CSV simultaneously
+    # Save to CSV 
     with open(output_file, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        if f.tell() == 0:  # Check if file is empty to write header
+        if f.tell() == 0:  
             writer.writerow([
-                "XID", "URL", "Name","Phase", "Builder", "Builder link", "Operating cities", "Experience", "Deals in Property type", "Office Address", "Total Projects", "Ready to Move Projects", "Ongoing Projects", "Builder Info", "Address", "Price", "Flat Type",
-                "Price per Sq.Ft", "Total Units", "Project Size",
-                "BHK", "Amenities", "Amenity Count", "USP", "Location Advantage", "Specifications", "Project Type", "Property Type", "Status", "Launch Date", "Possession Date", "Total Towers"
-            ])
+                "XID", "URL", "Project Name", "Builder Name","Location","Price Range","Price psft","Property Type","Possesion Date","LandMarks","Project Size","Size Range","Launch Date","RERA Number","Tower Count","Unit Count","USP","BHK","Amenity Count","Amenities","Image Count","Specifications","Review Count", "Builder Total Projects", "Builder Ready to Move Projects", "Builder Ongoing Projects", "Builder Info","Project Status", "Video Count"])
         writer.writerow(data_list[-1])
 
     with open(floor_plans_csv, mode="a", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
-        if file.tell() == 0:  # Check if file is empty to write header
-            writer.writerow(["XID","Phase", "Unit Type", "Unit Size", "Area Type", "Price", "Possession Date"])
-        # Write data
+        if file.tell() == 0:  
+            writer.writerow(["XID", "Unit Type", "Unit Size", "Area Type", "Price", "Possession Date"])
         writer.writerows(floor_plans)
 
 print(f" Data extraction complete. Results appended in {output_file}")
