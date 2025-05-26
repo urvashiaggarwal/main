@@ -3,17 +3,15 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
 
-# 1. Authorize and connect to Google Sheets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("thematic-center-456905-p2-9fe58916a625.json", scope)
 client = gspread.authorize(creds)
 
-# 2. Open your sheet and get data
+
 sheet = client.open_by_key("1ydIkGOMUGesNd4tiM7ZH9SRObGoaJShYxDt_1mxUZyU").worksheet("a2")
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 
-# 3. Clean `99acres` and `Brochure` column values
 def clean_99acres(val):
     if pd.isna(val):
         return []
@@ -29,14 +27,13 @@ def clean_brochure(val):
 df['99acres_clean'] = df['99acres'].apply(clean_99acres)
 df['brochure_clean'] = df['Brochure'].apply(clean_brochure)
 
-# 4. Compute missing amenities (in Brochure but not in 99acres)
+# Missing amenities
 df['missing_amenities'] = df.apply(
     lambda row: sorted(set(row['brochure_clean']) - set(row['99acres_clean'])),
     axis=1
 )
 
-# 5. Update Google Sheet with new column
-# Add "missing_amenities" header if not present
+# Update Google Sheet with new column
 header = sheet.row_values(1)
 missing_col_index = len(header) + 1
 if "missing_amenities" not in header:
@@ -44,7 +41,6 @@ if "missing_amenities" not in header:
 else:
     missing_col_index = header.index("missing_amenities") + 1
 
-# 6. Fill values row by row
 for i, value in enumerate(df['missing_amenities'], start=2):
     cell_value = ', '.join(value)
     sheet.update_cell(i, missing_col_index, cell_value)

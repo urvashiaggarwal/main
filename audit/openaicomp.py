@@ -55,10 +55,9 @@ class OpenAIClient:
 
             print(f"Raw response for {data_point}: {raw_json}")
 
-            # --- Handle the "result" string case with markdown ---
+            #Handle the "result" string case
             if isinstance(raw_json, dict) and "result" in raw_json:
                 result_str = raw_json["result"]
-                # Remove markdown code block if present
                 result_str = re.sub(r"^```(?:json)?\s*|\s*```$", "", result_str.strip(), flags=re.IGNORECASE)
                 parsed = json.loads(result_str)
             elif isinstance(raw_json, list):
@@ -79,7 +78,7 @@ class OpenAIClient:
             print(f"Error querying model for '{data_point}': {e}")
             return []
 
-# Sheet Processor remains mostly unchanged
+# Sheet Processor 
 class SheetDataProcessor:
     def __init__(self, sheet, llm_client):
         self.sheet = sheet
@@ -123,21 +122,17 @@ class SheetDataProcessor:
 if __name__ == "__main__":
     dotenv.load_dotenv(".env")
 
-    # Google Sheets setup
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     creds = Credentials.from_service_account_file("fresh-circle-449810-r1-3b72a51ca318.json", scopes=SCOPES)
     sheet = gspread.authorize(creds).open_by_key(os.getenv("SHEET_ID")).worksheet("Sheet22")
 
-    # Initialize OpenAIClient with custom endpoint
     endpoint = "http://new99acresposting:6009/api/analyze"
     client = OpenAIClient(endpoint=endpoint)
     processor = SheetDataProcessor(sheet, client)
 
-    # Load instructions for data points
     with open("data_point_instructions.json", "r", encoding="utf-8") as file:
         instructions = json.load(file)
 
-    # Loop over all data points
     for dp, rule in instructions.items():
         print(f"Processing: {dp}")
         try:

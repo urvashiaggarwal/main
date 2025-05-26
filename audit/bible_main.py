@@ -20,7 +20,6 @@ class DataPointScore(BaseModel):
 
 class GeminiClient:
     def __init__(self, model_name='gemini-2.5-flash-preview-04-17', prompt_path='bible_prompts.json'):
-        # Fetch the API key from the environment
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set or is empty.")
@@ -39,7 +38,6 @@ class GeminiClient:
     def get_scores(self, input_df: pd.DataFrame, data_point: str, instruction: str) -> List[DataPointScore]:
         prompt = self.__load_prompt("data_point_evaluator").format(instruction=instruction)
 
-        # Prepare model input
         contents = [
             types.Content(role="user", parts=[
                 types.Part.from_text(text=input_df.to_json(orient='records'))
@@ -61,9 +59,6 @@ class GeminiClient:
         )
 
         raw_text = response.candidates[0].content.parts[0].text.strip()
-
-        # Debugging: print raw response
-        print(f"Raw response for {data_point}: {raw_text}")
 
         # Validate and parse the JSON response
         if not raw_text:
@@ -91,7 +86,7 @@ class SheetDataProcessor:
         self.client = gemini_client
 
     def process_data_point(self, data_point_name, instruction) -> List[DataPointScore]:
-            # Filter data for this data point and where score is missing or NA
+            # Filtering data for data point and where score is missing or NA
             unscored_df = self.df[(self.df["data_point_name"] == data_point_name) & 
                                 (self.df["score"].astype(str).isin([""]))]
             if unscored_df.empty:
@@ -114,7 +109,6 @@ class SheetDataProcessor:
                 self.sheet.update_cell(row, col_map["score"], r.matching_score)
                 time.sleep(1)
 
-# Main execution
 if __name__ == "__main__":
     dotenv.load_dotenv()
 

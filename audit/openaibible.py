@@ -10,14 +10,12 @@ import requests
 from google.oauth2.service_account import Credentials
 
 
-# Pydantic model for output validation
+# Pydantic model 
 class DataPointScore(BaseModel):
     index: int
     data_point_name: str
     matching_score: Union[int, str]
 
-
-# Replaces GeminiClient
 class OpenAIClient:
     def __init__(self, endpoint_url: str, prompt_path='bible_prompts.json'):
         self.endpoint_url = endpoint_url
@@ -29,10 +27,9 @@ class OpenAIClient:
         return data.get(prompt_key, "")
 
     def get_scores(self, input_df: pd.DataFrame, data_point: str, instruction: str) -> List[DataPointScore]:
-        # Load and format prompt
+
         prompt = self.__load_prompt("data_point_evaluator").format(instruction=instruction)
 
-        # Prepare messages for chat-style API
         messages = [
             {"role": "system", "content": prompt},
             {"role": "user", "content": input_df.to_json(orient='records')}
@@ -42,7 +39,7 @@ class OpenAIClient:
         payload = {
             "messages": messages,
             "temperature": 0.8,
-            "keyType": "MINI"  # Optional: your backend might require this
+            "keyType": "MINI"  
         }
 
         headers = {"Content-Type": "application/json"}
@@ -54,7 +51,6 @@ class OpenAIClient:
             result = response.json()
             print(f"Raw response for {data_point}: {json.dumps(result, indent=2)}")
 
-            # --- Handle the "result" string case ---
             if isinstance(result, dict) and "result" in result:
                 parsed = json.loads(result["result"])
             elif isinstance(result, list):
@@ -126,7 +122,6 @@ if __name__ == "__main__":
     creds = Credentials.from_service_account_file("thematic-center-456905-p2-9fe58916a625.json", scopes=SCOPES)
     sheet = gspread.authorize(creds).open_by_key(os.getenv("SHEET_ID")).worksheet("Sheet22")
 
-    # Replace this with your actual GPT-4o Mini compatible endpoint
     custom_endpoint = "http://new99acresposting:6009/api/analyze"
 
     client = OpenAIClient(endpoint_url=custom_endpoint)
