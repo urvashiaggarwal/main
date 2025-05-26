@@ -75,4 +75,4 @@ comparison_df = comparison_df.drop_duplicates()
 
 # Export to CSV
 comparison_df.to_csv("project_comparison_by_xid_phase.csv", index=False)
-print("✅ Final comparison with normalized phases created successfully!")
+print("Final comparison with normalized phases created successfully!")
