@@ -3,7 +3,7 @@ import json
 import mysql.connector
 import pandas as pd
 from pydantic import BaseModel
-from typing import Union, List
+from typing import Union, List, Optional
 from google import genai
 from google.genai import types
 import dotenv
@@ -16,10 +16,10 @@ dotenv.load_dotenv()
 class DataPointScore(BaseModel):
     data_point_name: str
     index: int
-    ref_normalised: Union[str, int, None]
-    c1_normalised: Union[str, int, None]
-    c2_normalised: Union[str, int, None]
-    c3_normalised: Union[str, int, None]
+    ref_normalised: Optional[str]
+    c1_normalised: Optional[str]
+    c2_normalised: Optional[str]
+    c3_normalised: Optional[str]
 
 class GeminiClient:
     def __init__(self, model_name='gemini-2.5-flash-preview-04-17', prompt_path='gemini_prompts.json'):

@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 import dotenv
 import re
+from typing import Optional
 
 dotenv.load_dotenv()
 
@@ -15,9 +16,9 @@ dotenv.load_dotenv()
 class DataPointScore(BaseModel):
     data_point_name: str
     index: int
-    ref_normalised: Union[str, int, None]
-    primary_normalised: Union[str, int, None]
-    secondary_normalised: Union[str, int, None]
+    ref_normalised: Optional[str]
+    primary_normalised: Optional[str]
+    secondary_normalised: Optional[str]
 
 class GeminiClient:
     def __init__(self, model_name='gemini-2.5-flash-preview-04-17', prompt_path='gemini_prompts.json'):
@@ -361,7 +362,7 @@ class ScoreCalculator:
         
         return {
             'data_point_name': data_point_name,
-            'index': row['index'],
+            'index': row['Index'],
             'score': score
         }
 
