@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 import dotenv
 import mysql.connector
-
+from typing import Optional
 
 # Pydantic model
 class ConfigPriceScore(BaseModel):
@@ -19,9 +19,9 @@ class ConfigPriceScore(BaseModel):
     comparable_row: str
     option_matching_score: int
     price_matching_score: int
-    v1: Union[float, str] = 0.0
-    v2: Union[float, str] = 0.0
-    v3: Union[float, str] = 0.0
+    v1: Optional[str] 
+    v2: Optional[str]
+    v3: Optional[str]
 
 
 class GeminiClient:

@@ -32,7 +32,7 @@ cursor.execute("USE audit")
 
 # Step 2: Create table if not exists
 create_table_query = """
-CREATE TABLE IF NOT EXISTS bible_op_data (
+CREATE TABLE IF NOT EXISTS bible_oprns_data (
     `Index` INT NOT NULL,
     `data_point_name` VARCHAR(255) NOT NULL,
     `99acres` TEXT,
@@ -51,12 +51,12 @@ CREATE TABLE IF NOT EXISTS bible_op_data (
 cursor.execute(create_table_query)
 
 # Step 3: Get existing keys
-cursor.execute("SELECT `Index`, data_point_name FROM bible_op_data")
+cursor.execute("SELECT `Index`, data_point_name FROM bible_oprns_data")
 existing = set((row[0], row[1]) for row in cursor.fetchall())
 
 # Step 4: Prepare insert query
 insert_query = """
-INSERT INTO bible_op_data (
+INSERT INTO bible_oprns_data (
     `Index`,
     `data_point_name`,
     `99acres`,

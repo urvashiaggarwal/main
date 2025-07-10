@@ -16,7 +16,7 @@ conn = mysql.connector.connect(
 )
 
 # Query data, ordering by `index`
-query = "SELECT * FROM config_data ORDER BY `index`"
+query = "SELECT * FROM bible_config_data ORDER BY `index`"
 
 df = pd.read_sql(query, conn)
 

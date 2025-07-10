@@ -93,7 +93,7 @@ class MySQLConfigProcessor:
 
     def fetch_unscored_rows(self):
         query = """
-            SELECT * FROM config_data_bible
+            SELECT * FROM bible_config_data
             WHERE `option_matching_score` IS NULL 
         """
         self.cursor.execute(query)
@@ -105,7 +105,7 @@ class MySQLConfigProcessor:
 
         for score in scores:
             update_query = """
-                UPDATE config_data_bible
+                UPDATE bible_config_data
                 SET comparable_row = %s,
                     option_matching_score = %s,
                     price_matching_score = %s
